@@ -5,10 +5,13 @@
 """
 
 import json
+import re
+from datetime import datetime
 from functools import cache
 from pathlib import Path
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+LOG_DIR = Path(__file__).resolve().parent.parent / "learning_log"
 MAX_RESULTS = 3
 
 
@@ -77,3 +80,29 @@ def get_lecture_summary(lecture: int) -> str:
         available = sorted(p.stem for p in (DATA_DIR / "lectures").glob("*.md"))
         return f"第{lecture}回の要点はまだありません。用意されている回: {', '.join(available)}"
     return path.read_text(encoding="utf-8")
+
+LOG_DIR = Path(__file__).resolve().parent.parent / "learning_log"
+
+def save_learning_log(title: str, content: str) -> str:
+    """学習内容をMarkdown形式でlearning_logフォルダに保存する。
+
+    学習記録を残したいときに使う。
+    保存前には必ず利用者の承認を得ること。
+    titleには記録のタイトル、contentには学習内容を指定する。
+    """
+    if not title.strip() or not content.strip():
+        return "タイトルと学習内容の両方を入力してください。"
+
+    safe_title = re.sub(r"[^\w-]+", "-", title, flags=re.UNICODE)
+    safe_title = safe_title.strip("-")[:40] or "learning_log"
+
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+
+    file_path = LOG_DIR / f"{timestamp}-{safe_title}.md"
+    file_path.write_text(
+        f"# {title}\n\n{content}\n",
+        encoding="utf-8",
+    )
+
+    return f"学習記録を保存しました: {file_path}"
